@@ -1,5 +1,7 @@
 package org.demo.controller;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -7,20 +9,17 @@ import java.util.Map;
 import javax.validation.Valid;
 
 import io.swagger.annotations.Api;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.demo.repository.UserDetailsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import org.demo.exception.ResourceNotFoundException;
 import org.demo.model.UserDetails;
+import org.springframework.web.multipart.MultipartFile;
 
 
 @Api(value = "UserDetailsController", description = "REST APIs related to UserDetails Entity!!!!")
@@ -71,5 +70,27 @@ public class UserDetailsController {
 		Map<String, Boolean> response = new HashMap<>();
 		response.put("deleted", Boolean.TRUE);
 		return response;
+	}
+
+	@PostMapping("/bulkUpload")
+	public ResponseEntity<String> mapReapExcelDatatoDB(@RequestParam("uploadFile") MultipartFile reapExcelDataFile) throws IOException {
+
+		List<UserDetails> tempStudentList = new ArrayList<UserDetails>();
+		XSSFWorkbook workbook = new XSSFWorkbook(reapExcelDataFile.getInputStream());
+		XSSFSheet worksheet = workbook.getSheetAt(0);
+
+		for(int i=1;i<worksheet.getPhysicalNumberOfRows() ;i++) {
+			UserDetails userDetails = new UserDetails();
+
+			XSSFRow row = worksheet.getRow(i);
+
+			userDetails.setFirstName(row.getCell(0).getStringCellValue());
+			userDetails.setLastName(row.getCell(1).getStringCellValue());
+			userDetails.setEmailId(row.getCell(2).getStringCellValue());
+			userDetails.setPassportNumber(row.getCell(3).getStringCellValue());
+			userdetailsRepository.save(userDetails);
+
+		}
+		return ResponseEntity.ok().body("File Uploaded Successfully");
 	}
 }
